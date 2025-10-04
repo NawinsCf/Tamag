@@ -37,6 +37,23 @@ public class TamagotypeService {
         return repo.findAll();
     }
 
+    public org.springframework.data.domain.Page<Tamagotype> page(int page, int size, String q, String sort) {
+        org.springframework.data.domain.Sort sortObj = org.springframework.data.domain.Sort.by("id");
+        if (sort != null && !sort.isBlank()) {
+            if (sort.startsWith("-")) {
+                sortObj = org.springframework.data.domain.Sort.by(sort.substring(1)).descending();
+            } else {
+                sortObj = org.springframework.data.domain.Sort.by(sort).ascending();
+            }
+        }
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sortObj);
+        if (q == null || q.isBlank()) {
+            return repo.findAll(pageable);
+        }
+        String pattern = "%" + q.toLowerCase() + "%";
+        return repo.findByNomIgnoreCaseContainingOrDescrIgnoreCaseContaining(q, q, pageable);
+    }
+
     public java.util.List<Tamagotype> findAllActive() {
         return repo.findAllByEstActifTrue();
     }

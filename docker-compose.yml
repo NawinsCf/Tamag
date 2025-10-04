@@ -16,6 +16,8 @@ services:
       - "8081:8080"
     environment:
       SERVER_PORT: 8080
+      # JWT secret must match the one used by tamagoservice so services can verify access tokens
+      APP_JWT_SECRET: "Bm8wDVLQ22jJNamsqbpEIvxyn7jFnmeXTfwbCmVt29Q="
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/tamag?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
@@ -30,6 +32,13 @@ services:
       - "8082:8080"
     environment:
       SERVER_PORT: 8080
+      # Enable DEBUG logging for Spring MVC and request mapping to help diagnose missing controller mappings
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_SERVLET: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_SERVLET_HANDLER: DEBUG
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_SERVLET_DISPATCHER: DEBUG
+      # JWT secret (generated locally) - keep this out of source control in production
+      APP_JWT_SECRET: "Bm8wDVLQ22jJNamsqbpEIvxyn7jFnmeXTfwbCmVt29Q="
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/tamag?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root

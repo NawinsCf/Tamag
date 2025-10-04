@@ -53,4 +53,8 @@ public class UserService {
                     }
                 }).orElseThrow(() -> new com.tamago.tamagoservice.exception.AuthenticationFailedException("Invalid credentials"));
     }
+
+    public java.util.Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
+    }
 }

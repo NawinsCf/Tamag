@@ -20,10 +20,10 @@ export default function RegisterPage() {
     setMsg(null);
     try {
       const hashed = await sha256Hex(mdp);
-      const res = await api.post('/api/users', { pseudo, mdp: hashed, mail });
-      // log the user in and redirect to start
-      login(res.data);
-      router.replace('/start');
+  await api.post('/api/users', { pseudo, mdp: hashed, mail });
+  // now perform login flow that sets cookies and populates /me
+  await login({ pseudo, mdp: hashed });
+  router.replace('/start');
     } catch (err) {
       const error = err as unknown;
       let message = 'Unknown error';

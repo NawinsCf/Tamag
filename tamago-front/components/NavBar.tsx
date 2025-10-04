@@ -1,10 +1,12 @@
 "use client";
 import React, { useContext } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AuthContext } from '../src/context/AuthContext';
 
 export default function NavBar() {
   const { user, logout } = useContext(AuthContext);
+  const router = useRouter();
 
   return (
     <nav className="w-full bg-white shadow p-4 flex justify-between items-center">
@@ -24,7 +26,7 @@ export default function NavBar() {
         {user ? (
           <>
  
-            <button onClick={() => { logout(); window.location.href = '/'; }} className="px-3 py-1 border rounded">Se déconnecter</button>
+            <button onClick={async () => { await logout(); router.replace('/'); }} className="px-3 py-1 border rounded">Se déconnecter</button>
           </>
         ) : (
           <Link href="/" className="px-3 py-1 border rounded">Se connecter</Link>

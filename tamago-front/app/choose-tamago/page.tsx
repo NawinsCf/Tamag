@@ -138,9 +138,9 @@ export default function ChooseTamagoPage() {
                     }
                   }
 
-                  // Create new tamago
-                  const payload = { idUser: user.id, idTamagotype: chosen.id };
-                  await feedApi.post('/api/tamago', payload);
+                  // Create/choose new tamago via authenticated endpoint
+                  const payload = { idtype: chosen.id, nom: chosen.nom || chosen.name || `Tamago-${Date.now()}` };
+                  await feedApi.post('/api/user/choose-tamago', payload);
 
                   // On success navigate back to start (or play)
                   router.push('/start');

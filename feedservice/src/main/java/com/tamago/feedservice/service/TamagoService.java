@@ -168,4 +168,14 @@ public class TamagoService {
         // Tamago is dead; do nothing
         return Optional.of(t);
     }
+
+    public org.springframework.data.domain.Page<Tamago> page(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return repo.findAll(pageable);
+    }
+
+    // Return all tamagos (used by controller's non-paginated endpoint)
+    public java.util.List<Tamago> findAll() {
+        return repo.findAll();
+    }
 }

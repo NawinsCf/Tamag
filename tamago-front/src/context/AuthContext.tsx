@@ -1,45 +1,66 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import * as auth from '../../lib/auth';
+import '../../lib/axios-interceptor';
 
 type User = { id: number; pseudo: string; mail?: string; estAdmin?: boolean } | null;
 
 type AuthContextType = {
   user: User;
   initialized: boolean;
-  login: (user: User) => void;
-  logout: () => void;
+  login: (u: { pseudo: string; mdp: string }) => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   initialized: false,
-  login: () => {},
-  logout: () => {},
+  login: async () => {},
+  logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
   const [initialized, setInitialized] = useState(false);
 
+  // On mount, check /me to populate user state
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('tamago_user');
-      if (raw) setUser(JSON.parse(raw));
-    } catch {
-      // ignore
-    }
-    // localStorage check is complete (even if no user found)
-    setInitialized(true);
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await auth.me();
+        if (!mounted) return;
+        setUser(res.data);
+      } catch (e) {
+        // not authenticated
+        if (!mounted) return;
+        setUser(null);
+      } finally {
+        if (mounted) setInitialized(true);
+      }
+    })();
+    return () => { mounted = false; };
   }, []);
 
-  useEffect(() => {
-    if (user) localStorage.setItem('tamago_user', JSON.stringify(user));
-    else localStorage.removeItem('tamago_user');
-  }, [user]);
+  const login = async (credentials: { pseudo: string; mdp: string }) => {
+    await auth.login(credentials.pseudo, credentials.mdp);
+    try {
+      const res = await auth.me();
+      setUser(res.data);
+    } catch {
+      setUser(null);
+    }
+  };
 
-  const login = (u: User) => setUser(u);
-  const logout = () => setUser(null);
+  const logout = async () => {
+    try {
+      await auth.logout();
+    } catch (e) {
+      // ignore
+    }
+    setUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, initialized, login, logout }}>

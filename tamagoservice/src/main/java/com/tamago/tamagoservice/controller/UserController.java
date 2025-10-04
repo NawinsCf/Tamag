@@ -25,6 +25,10 @@ public class UserController {
     }
 
     @PostMapping
+    /**
+     * Crée un nouvel utilisateur (inscription). Retourne 201 avec les informations publiques
+     * de l'utilisateur en cas de succès, ou 400 si les données sont invalides.
+     */
     public ResponseEntity<?> create(@Valid @RequestBody UserCreateRequest req) {
         try {
             User created = userService.createUser(req.getPseudo(), req.getMdp(), req.getMail());

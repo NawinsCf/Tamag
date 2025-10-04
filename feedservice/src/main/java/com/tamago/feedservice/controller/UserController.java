@@ -31,12 +31,22 @@ public class UserController {
     }
 
     @GetMapping("/{id}/has-living-tamago")
+    /**
+     * Indique si l'utilisateur a au moins un Tamago vivant.
+     * @param userId identifiant de l'utilisateur
+     * @return true si un Tamago vivant existe, false sinon
+     */
     public ResponseEntity<?> hasLivingTamago(@PathVariable("id") Long userId) {
         boolean exists = tamagoRepo.existsByIduserAndEstVivantTrue(userId);
         return ResponseEntity.ok(exists);
     }
 
     @GetMapping("/{id}/living-tamagos")
+    /**
+     * Retourne la liste des Tamagos vivants pour un utilisateur donné.
+     * @param userId identifiant de l'utilisateur
+     * @return liste des TamagoResponse
+     */
     public ResponseEntity<?> getLivingTamagos(@PathVariable("id") Long userId) {
         java.util.List<com.tamago.feedservice.model.Tamago> list = tamagoRepo.findByIduserAndEstVivantTrue(userId);
         java.util.List<com.tamago.feedservice.dto.TamagoResponse> resp = new java.util.ArrayList<>();
@@ -47,6 +57,12 @@ public class UserController {
     }
 
     @PostMapping("/{id}/choose-tamago")
+    /**
+     * Endpoint pour permettre à un utilisateur (authentifié) de choisir ou revendiquer un Tamago.
+     * Si `tamagoId` est fourni dans le corps, on revendique l'entité existante ; sinon on
+     * crée un nouveau Tamago en utilisant l'idtype et le nom fournis. L'utilisateur est
+     * vérifié via l'attribut request `authUserId` (mis par le filtre JWT).
+     */
     public ResponseEntity<?> chooseTamago(@PathVariable("id") Long userId, @RequestBody ChooseTamagoRequest req, HttpServletRequest request) {
         Object o = request.getAttribute("authUserId");
         if (o == null) {
@@ -97,6 +113,11 @@ public class UserController {
 
     // New simplified endpoint: infer userId from JWT, no need to pass it in URL.
     @PostMapping("/choose-tamago")
+    /**
+     * Variante simplifiée du choix de Tamago : infère l'utilisateur depuis le JWT (authUserId)
+     * et délègue à la logique de création/claim. Utile pour le front qui n'a pas besoin d'envoyer
+     * l'id utilisateur en URL.
+     */
     public ResponseEntity<?> chooseTamagoSelf(@RequestBody ChooseTamagoRequest req, HttpServletRequest request) {
         Object o = request.getAttribute("authUserId");
         if (o == null) {

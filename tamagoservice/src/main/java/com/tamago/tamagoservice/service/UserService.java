@@ -21,6 +21,15 @@ public class UserService {
 
     @Transactional
     public User createUser(String pseudo, String rawPassword, String mail) {
+    /**
+     * Crée un nouvel utilisateur. `rawPassword` est attendu comme le hash SHA-256 côté client ;
+     * il sera re-haché avec bcrypt pour stockage sécurisé.
+     * @param pseudo identifiant public
+     * @param rawPassword hash SHA-256 du mot de passe fourni par le client
+     * @param mail adresse email
+     * @return l'utilisateur créé
+     * @throws DuplicateResourceException si le pseudo est déjà pris
+     */
         // quick pre-check (gives fast feedback most of the time)
         if (userRepository.existsByPseudo(pseudo)) {
             throw new DuplicateResourceException("Pseudo already in use");
@@ -43,6 +52,13 @@ public class UserService {
     }
 
     public User authenticate(String pseudo, String rawPassword) {
+    /**
+     * Authentifie un utilisateur : récupère l'utilisateur par pseudo et compare
+     * le mot de passe (bcrypt sur le hash donné par le client).
+     * @param pseudo pseudo
+     * @param rawPassword hash SHA-256 du mot de passe (tel que fourni par le client)
+     * @return User authentifié
+     */
         // rawPassword is expected to be the client-side SHA-256 hex of the user's password.
         return userRepository.findByPseudo(pseudo)
                 .map(u -> {
@@ -55,6 +71,9 @@ public class UserService {
     }
 
     public java.util.Optional<User> getUserById(Long id) {
+        /**
+         * Récupère un utilisateur par identifiant.
+         */
         return userRepository.findById(id);
     }
 }

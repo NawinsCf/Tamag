@@ -29,6 +29,11 @@ public class TamagoController {
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Retourne la liste complète des Tamagos.
+     * Utilisé principalement par l'interface d'administration.
+     * @return ResponseEntity contenant la liste des TamagoResponse
+     */
     public ResponseEntity<java.util.List<TamagoResponse>> findAll() {
         java.util.List<Tamago> list = service.findAll();
         java.util.List<TamagoResponse> resp = list.stream().map(TamagoResponse::fromEntity).toList();
@@ -37,6 +42,12 @@ public class TamagoController {
 
     // Paginated endpoint for admin UI
     @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Endpoint paginé pour récupérer une page de Tamagos (utilisé par l'UI admin).
+     * @param page numéro de page (0-based)
+     * @param size taille de la page
+     * @return Page de TamagoResponse
+     */
     public ResponseEntity<org.springframework.data.domain.Page<TamagoResponse>> page(
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size
@@ -48,6 +59,12 @@ public class TamagoController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
+    /**
+     * Crée un nouveau Tamago pour un utilisateur donné (endpoint utilisé côté admin ou scripts).
+     * Le corps doit contenir idUser et idTamagotype.
+     * @param req requête de création
+     * @return TamagoResponse représentant l'entité créée
+     */
     public TamagoResponse create(@Valid @RequestBody TamagoCreateRequest req) {
         // load user
         com.tamago.feedservice.model.User user = userRepo.findById(req.getIdUser()).orElseThrow(() -> new com.tamago.feedservice.exception.ResourceNotFoundException("User not found: " + req.getIdUser()));
@@ -64,6 +81,10 @@ public class TamagoController {
     @PostMapping("/{id}/calculefaim")
     public ResponseEntity<?> calculeFaim(@PathVariable("id") Long id,
                                          @RequestParam(value = "at", required = false) String atIso) {
+    /**
+     * Recalcule la faim / santé d'un Tamago à l'instant 'at' (ou maintenant si non fourni).
+     * Retourne l'entité mise à jour ou 404 si non trouvée.
+     */
         Instant at = null;
         if (atIso != null && !atIso.isBlank()) {
             try {
@@ -84,6 +105,10 @@ public class TamagoController {
     public ResponseEntity<?> update(@PathVariable("id") Long id,
                                     @Valid @RequestBody com.tamago.feedservice.dto.TamagoUpdateRequest req,
                                     @RequestParam(value = "returnEntity", required = false) Boolean returnEntity) {
+    /**
+     * Mise à jour partielle d'un Tamago (ex: kill=true pour tuer un Tamago, nom pour renommer).
+     * Par défaut retourne 204 No Content; si ?returnEntity=true retourne l'entité mise à jour.
+     */
         Optional<Tamago> updated = service.updateTamago(id, req.getKill(), req.getNom());
         if (updated.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "NOT_FOUND", "message", "Tamago not found"));
@@ -103,6 +128,13 @@ public class TamagoController {
     @PostMapping(path = "/{id}/nourrir")
     public ResponseEntity<?> nourrir(@PathVariable("id") Long id,
                                      @RequestParam(value = "returnEntity", required = false) Boolean returnEntity) {
+    /**
+     * Nourrit le Tamago : on recalcule d'abord la faim pour synchroniser l'état, puis
+     * si le Tamago est vivant on restaure pv/pf aux valeurs par défaut du Tamagotype et on
+     * met à jour lastcon.
+     * @param id identifiant du Tamago
+     * @param returnEntity si true retourne l'entité mise à jour
+     */
         // First, recalculate hunger/health to bring Tamago up to date
         Optional<com.tamago.feedservice.model.Tamago> afterCalc = service.calculeFaim(id, null);
         if (afterCalc.isEmpty()) {

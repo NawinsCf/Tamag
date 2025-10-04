@@ -25,7 +25,8 @@ public class UserService {
         if (userRepository.existsByPseudo(pseudo)) {
             throw new DuplicateResourceException("Pseudo already in use");
         }
-
+        // rawPassword is expected to be the client-side SHA-256 hex of the user's password.
+        // We protect stored credentials by applying bcrypt to that client-side hash.
         String hashed = passwordEncoder.encode(rawPassword);
         User u = new User();
         u.setPseudo(pseudo);
@@ -42,6 +43,7 @@ public class UserService {
     }
 
     public User authenticate(String pseudo, String rawPassword) {
+        // rawPassword is expected to be the client-side SHA-256 hex of the user's password.
         return userRepository.findByPseudo(pseudo)
                 .map(u -> {
                     if (passwordEncoder.matches(rawPassword, u.getMdp())) {

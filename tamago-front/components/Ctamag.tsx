@@ -43,8 +43,7 @@ type CtamagProps = {
   dualLabelRight?: string;
 };
 
-// clamp was used by the previous gauge renderer; it's no longer needed but kept in case of future use.
-const clamp = (v: number, min = 0, max = 100) => Math.max(min, Math.min(max, v));
+// clamp was used by the previous gauge renderer; removed because it's unused to satisfy ESLint.
 
 export default function Ctamag({ label, imageSrc, imageAlt, tamagoType, tamago, size = 'md', className = '', onClick }: CtamagProps) {
   // If a tamagoType was passed in props, prefer computing the two gauges from it.

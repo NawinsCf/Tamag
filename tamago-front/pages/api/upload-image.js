@@ -12,7 +12,10 @@ import formidable from 'formidable';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const form = new formidable.IncomingForm();
+  // Support both formidable v1 (IncomingForm constructor) and v3+ (default export is a function)
+  const form = (typeof formidable === 'function') ? formidable({ multiples: false }) : new formidable.IncomingForm();
+
+  // formidable v3 supports async parse via callback or event; keep callback API for compatibility
   form.parse(req, (err, fields, files) => {
     if (err) {
       console.error('form parse error', err);

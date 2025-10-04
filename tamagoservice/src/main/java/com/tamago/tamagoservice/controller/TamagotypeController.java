@@ -45,6 +45,19 @@ public class TamagotypeController {
         return ResponseEntity.ok(resp);
     }
 
+    // Paginated endpoint for admin UI: supports page, size, optional q (search by name/descr), and sort (e.g. nom, -pv)
+    @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<org.springframework.data.domain.Page<TamagotypeResponse>> page(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "q", required = false) String q,
+            @RequestParam(value = "sort", required = false) String sort
+    ) {
+        org.springframework.data.domain.Page<com.tamago.tamagoservice.model.Tamagotype> p = service.page(page, size, q, sort);
+        org.springframework.data.domain.Page<TamagotypeResponse> resp = p.map(TamagotypeResponse::fromEntity);
+        return ResponseEntity.ok(resp);
+    }
+
     @GetMapping(value = "/active", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<java.util.List<TamagotypeResponse>> findAllActive() {
         java.util.List<Tamagotype> list = service.findAllActive();

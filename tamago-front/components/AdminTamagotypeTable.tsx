@@ -44,23 +44,23 @@ export default function AdminTamagotypeTable({ initialPage = 0 }: { initialPage?
     () => [
       {
         accessorKey: 'id',
-        header: 'ID',
+        header: () => <span className="text-sm font-medium">ID</span>,
       },
       {
         accessorKey: 'nom',
-        header: 'Nom',
+        header: () => <span className="text-sm font-medium">Nom</span>,
       },
       {
         accessorKey: 'descr',
-        header: 'Description',
+        header: () => <span className="text-sm font-medium">Description</span>,
       },
       {
         accessorKey: 'pv',
-        header: 'PV',
+        header: () => <span className="text-sm font-medium">PV (max)</span>,
       },
       {
         accessorKey: 'pf',
-        header: 'PF',
+        header: () => <span className="text-sm font-medium">PF (max)</span>,
       },
       {
         id: 'select',
@@ -89,6 +89,7 @@ export default function AdminTamagotypeTable({ initialPage = 0 }: { initialPage?
 
   return (
     <div>
+      <h2 className="text-lg font-semibold mb-2">Liste des Tamagotypes</h2>
       <div className="flex gap-2 mb-2">
         <input
           placeholder="Recherche..."
@@ -102,14 +103,20 @@ export default function AdminTamagotypeTable({ initialPage = 0 }: { initialPage?
   {error && <div>Erreur lors du chargement des tamagotypes — vérifiez que le backend est démarré et accessible.</div>}
 
       <table className="w-full text-left border-collapse">
+        <caption className="sr-only">Liste des Tamagotypes (admin)</caption>
         <thead>
           {table.getHeaderGroups().map((hg: any) => (
                 <tr key={hg.id}>
-                  {hg.headers.map((h: any) => (
-                    <th key={h.id} className="border px-2 py-1 bg-gray-100">
-                      {flexRender(h.header, h.getContext())}
-                    </th>
-                  ))}
+                  {hg.headers.map((h: any) => {
+                    const headerNode = h.column?.columnDef?.header;
+                    const headerName = h.column?.columnDef?.headerName;
+                    const rendered = headerNode ? flexRender(headerNode, h.getContext()) : (headerName ?? '');
+                    return (
+                      <th key={h.id} className="border px-2 py-1 bg-gray-100 text-gray-800">
+                        {rendered}
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
         </thead>

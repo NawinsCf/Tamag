@@ -28,6 +28,24 @@ public class TamagoController {
         this.userRepo = userRepo;
     }
 
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<java.util.List<TamagoResponse>> findAll() {
+        java.util.List<Tamago> list = service.findAll();
+        java.util.List<TamagoResponse> resp = list.stream().map(TamagoResponse::fromEntity).toList();
+        return ResponseEntity.ok(resp);
+    }
+
+    // Paginated endpoint for admin UI
+    @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<org.springframework.data.domain.Page<TamagoResponse>> page(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
+    ) {
+        org.springframework.data.domain.Page<com.tamago.feedservice.model.Tamago> p = service.page(page, size);
+        org.springframework.data.domain.Page<TamagoResponse> resp = p.map(TamagoResponse::fromEntity);
+        return ResponseEntity.ok(resp);
+    }
+
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public TamagoResponse create(@Valid @RequestBody TamagoCreateRequest req) {

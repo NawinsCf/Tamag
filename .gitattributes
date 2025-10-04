@@ -1,0 +1,14 @@
+# Ensure shell scripts and SQL files use LF (important for POSIX shells)
+*.sh text eol=lf
+*.sql text eol=lf
+
+# Keep Java/TS/JS/TSX/HTML as text and let git handle normalisation
+*.java text
+*.ts text
+*.tsx text
+*.js text
+*.jsx text
+*.html text
+
+# Default: let Git determine text/binary and normalize text files
+* text=auto

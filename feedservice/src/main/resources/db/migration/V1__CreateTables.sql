@@ -1,0 +1,38 @@
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  pseudo VARCHAR(50) NOT NULL UNIQUE,
+  mdp VARCHAR(100) NOT NULL, -- stocker hash
+  mail VARCHAR(100),
+  est_admin BOOLEAN NOT NULL DEFAULT FALSE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS tamagotype (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  nom VARCHAR(50) NOT NULL UNIQUE,
+  descr VARCHAR(250) NOT NULL,
+  pv INT NOT NULL,
+  pf INT NOT NULL,
+  nom_img VARCHAR(100),
+  couleur VARCHAR(7),
+  value_faim INT NOT NULL DEFAULT 3,
+  value_regen INT NOT NULL DEFAULT 1,
+  est_actif BOOLEAN NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS tamago (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  idtype BIGINT NOT NULL,
+  iduser BIGINT NOT NULL,
+  nom VARCHAR(50) NOT NULL,
+  pv INT,
+  pf INT,
+  est_vivant BOOLEAN NOT NULL DEFAULT TRUE,
+  lastcon DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_tamago_type FOREIGN KEY (idtype) REFERENCES tamagotype(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tamago_user FOREIGN KEY (iduser) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Indexes explicites si besoin
+CREATE INDEX idx_tamago_user ON tamago (iduser);
+CREATE INDEX idx_tamago_type ON tamago (idtype);
+

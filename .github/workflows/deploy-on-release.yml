@@ -1,0 +1,103 @@
+name: Deploy on release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare deploy script
+        run: |
+          cat > deploy.sh <<'EOF'
+          set -e
+          cd ~/deploy
+          # pull the images defined in the prod compose file and start
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml up -d
+          EOF
+
+      - name: Copy docker-compose.prod.yml to remote
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          source: "docker-compose.prod.yml"
+          target: "~/deploy/docker-compose.prod.yml"
+
+      - name: Write .env on remote from secret
+        if: ${{ secrets.PROD_DOTENV != '' }}
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          script: |
+            mkdir -p ~/deploy
+            cat > ~/deploy/.env <<'EOF'
+${{ secrets.PROD_DOTENV }}
+EOF
+
+      - name: Copy deploy script to remote
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          source: "deploy.sh"
+          target: "~/deploy/deploy.sh"
+
+      - name: Remote docker login & run deploy
+        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          script: |
+            set -e
+            # ensure deploy dir exists and script is present
+            mkdir -p ~/deploy
+            chmod +x ~/deploy/deploy.sh || true
+            # perform docker login using secrets passed from Actions (piped to stdin)
+            echo "Logging in to Docker registry on remote host"
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin || {
+              echo "Docker login failed" >&2
+              exit 1
+            }
+            # run deploy script which will pull & start containers
+            ~/deploy/deploy.sh
+            # logout after deploy to remove cached credentials
+            docker logout || true
+
+      - name: Remote deploy without Docker login (public images)
+        if: ${{ secrets.DOCKER_USERNAME == '' || secrets.DOCKER_PASSWORD == '' }}
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          script: |
+            set -e
+            chmod +x ~/deploy/deploy.sh || true
+            ~/deploy/deploy.sh
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v0.1.8
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_SSH_PORT }}
+          script: |
+            docker ps

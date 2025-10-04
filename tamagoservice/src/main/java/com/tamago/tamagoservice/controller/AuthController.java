@@ -74,6 +74,12 @@ public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @PostMapping("/login")
+    /**
+     * Authentifie l'utilisateur avec pseudo/mdp. En cas de succès:
+     * - génère un JWT d'accès (cookie HttpOnly `tmg_at`)
+     * - crée et stocke un refresh token opaque et met le cookie HttpOnly `tmg_rt`
+     * Retourne les informations publiques de l'utilisateur.
+     */
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req, HttpServletRequest request, HttpServletResponse response) {
         User u = userService.authenticate(req.getPseudo(), req.getMdp());
 
@@ -118,6 +124,11 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
+    /**
+     * Rotations des refresh tokens et émission d'un nouvel access token.
+     * Fonctionne uniquement si le refresh token opaque présenté existe et n'est pas révoqué.
+     * Gère la détection de reuse/replay et révoque tous les tokens en cas de suspicion.
+     */
     public ResponseEntity<?> refresh(@CookieValue(name = "tmg_rt", required = false) String refreshCookie, HttpServletRequest request, HttpServletResponse response) {
         if (refreshCookie == null || refreshCookie.isBlank()) {
             return ResponseEntity.status(401).build();
@@ -200,6 +211,9 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    /**
+     * Déconnexion : révoque le refresh token présent (si trouvé) et efface les cookies d'auth.
+     */
     public ResponseEntity<?> logout(@CookieValue(name = "tmg_rt", required = false) String refreshCookie, HttpServletRequest request, HttpServletResponse response) {
         if (refreshCookie != null && !refreshCookie.isBlank()) {
             String h = sha256Hex(refreshCookie);
@@ -228,6 +242,9 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    /**
+     * Retourne les informations de l'utilisateur actuellement authentifié (via le cookie d'accès).
+     */
     public ResponseEntity<?> me(HttpServletRequest request) {
         Object o = request.getAttribute("authUserId");
         if (o == null) return ResponseEntity.status(401).build();

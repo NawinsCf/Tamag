@@ -15,6 +15,11 @@ public class TamagotypeService {
     }
 
     public Tamagotype create(TamagotypeCreateRequest r) {
+        /**
+         * Crée un Tamagotype à partir de la requête fournie. Vérifie l'unicité du nom.
+         * @param r données de création
+         * @return Tamagotype créé
+         */
         if (repo.existsByNom(r.getNom())) {
             throw new IllegalArgumentException("Tamagotype with this name already exists");
         }
@@ -34,6 +39,10 @@ public class TamagotypeService {
     }
 
     public java.util.List<Tamagotype> findAll() {
+        /**
+         * Retourne tous les Tamagotypes.
+         * @return liste de Tamagotype
+         */
         return repo.findAll();
     }
 
@@ -59,10 +68,21 @@ public class TamagotypeService {
     }
 
     public Tamagotype findById(Long id) {
+        /**
+         * Retourne un Tamagotype par identifiant ou lève une exception si non trouvé.
+         * @param id identifiant
+         * @return Tamagotype trouvé
+         */
         return repo.findById(id).orElseThrow(() -> new com.tamago.tamagoservice.exception.ResourceNotFoundException("Tamagotype not found: " + id));
     }
 
     public Tamagotype update(Long id, com.tamago.tamagoservice.dto.TamagotypeUpdateRequest u) {
+        /**
+         * Mise à jour partielle (PATCH) d'un Tamagotype : n'applique que les champs non nuls.
+         * @param id identifiant
+         * @param u requête de mise à jour
+         * @return Tamagotype mis à jour
+         */
         Tamagotype t = findById(id);
         if (u.getNom() != null) t.setNom(u.getNom());
         if (u.getDescr() != null) t.setDescr(u.getDescr());
@@ -80,6 +100,9 @@ public class TamagotypeService {
      * Replace the Tamagotype with the provided full representation (PUT semantics).
      */
     public Tamagotype replace(Long id, com.tamago.tamagoservice.dto.TamagotypeCreateRequest r) {
+        /**
+         * Remplace complètement le Tamagotype (PUT semantics) par la représentation fournie.
+         */
         Tamagotype t = findById(id);
         t.setNom(r.getNom());
         t.setDescr(r.getDescr());

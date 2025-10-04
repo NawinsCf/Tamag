@@ -44,6 +44,45 @@ npm install
 npm run dev
 ```
 
+Notes et détails pratiques
+-------------------------
+
+- Ports exposés par `docker-compose.yml` (par défaut) :
+  - MySQL (db) : 3306
+  - feedservice : 8081 (container 8080)
+  - tamagoservice : 8082 (container 8080)
+
+- Variables d'environnement recommandées pour le `tamago-front` (mettre dans `.env.local` pour le dev) :
+  - `NEXT_PUBLIC_FEEDSERVICE_BASE=http://localhost:8081`
+  - `NEXT_PUBLIC_TAMAGOSERVICE_BASE=http://localhost:8082`
+  (le front utilisera ces URL pour appeler les endpoints des deux services)
+
+- Migrations & ordre de démarrage
+  - Les migrations Flyway sont fournies dans `tamagoservice/src/main/resources/db/migration`.
+  - Pour rendre le démarrage plus robuste (éviter les courses entre MySQL et les services), des scripts `wait-for-db.sh` ont été ajoutés aux images des deux services (`feedservice/wait-for-db.sh` et `tamagoservice/wait-for-db.sh`).
+    Ces scripts attendent que MySQL accepte les connexions avant de lancer l'application (et donc Flyway).
+
+- Commandes utiles (PowerShell)
+
+  # Monter tout en local (rebuild)
+  docker-compose up --build
+
+  # Monter en arrière-plan
+  docker-compose up -d --build
+
+  # Voir les logs (exemples)
+  docker-compose logs -f db
+  docker-compose logs -f feedservice
+  docker-compose logs -f tamagoservice
+
+- Vérifier Flyway (depuis le conteneur MySQL) :
+  docker-compose exec db mysql -uroot -proot -e "USE tamag; SHOW TABLES; SELECT * FROM flyway_schema_history\G"
+
+- Points d'amélioration suggérés :
+  - Ajouter `healthcheck` et `restart` dans `docker-compose.yml` pour redonner de la robustesse au déploiement local.
+  - Remplacer/centraliser les migrations dans un service ou job dédié en environnement CI/CD si le projet grossit.
+
+
 Git — commandes prêtes à exécuter (PowerShell)
 ---------------------------------------------
 Remplace `<REMOTE_URL>` par l'URL de ton dépôt distant (GitHub/GitLab/Bitbucket).

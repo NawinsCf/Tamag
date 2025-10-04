@@ -2,6 +2,7 @@
 
 import React, { useState, useContext } from 'react';
 import api from '../lib/api';
+import { sha256Hex } from '../lib/hash';
 import { AuthContext } from '../src/context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -17,7 +18,9 @@ export default function LoginForm({ showRegisterLink = false }: { showRegisterLi
     e.preventDefault();
     setMsg(null);
     try {
-      const res = await api.post('/api/auth/login', { pseudo, mdp });
+  const hashed = await sha256Hex(mdp);
+  // send both the client-side hash and the raw password as mdpRaw for transition
+  const res = await api.post('/api/auth/login', { pseudo, mdp: hashed, mdpRaw: mdp });
   login(res.data);
   // navigate client-side with Next router
   router.replace('/start');

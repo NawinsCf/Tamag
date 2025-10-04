@@ -25,6 +25,17 @@ export default function StartPage() {
   const [toastType, setToastType] = useState<'info'|'success'|'error'>('info');
   const [feeding, setFeeding] = useState(false);
 
+  // small helper to read potentially-variant numeric props from unknown objects
+  const getNumberProp = (obj: unknown, ...keys: string[]) => {
+    if (!obj || typeof obj !== 'object') return undefined as number | undefined;
+    const rec = obj as Record<string, unknown>;
+    for (const k of keys) {
+      const v = rec[k];
+      if (v !== undefined && v !== null && v !== '') return Number(v as unknown);
+    }
+    return undefined as number | undefined;
+  };
+
   useEffect(() => {
     // only redirect to index when auth init finished and there's no user
     if (initialized && !user) {
@@ -111,8 +122,8 @@ export default function StartPage() {
       const isAlive = (current.estVivant ?? true) !== false && (Number(current.pv ?? 0) > 0);
       if (!isAlive) return;
 
-      const valueFaim = Number(currentType.valueFaim ?? (currentType as any).value_faim ?? 1);
-      const valueRegen = Number(currentType.valueRegen ?? (currentType as any).value_regen ?? 1);
+  const valueFaim = Number(getNumberProp(currentType, 'valueFaim', 'value_faim') ?? 1);
+  const valueRegen = Number(getNumberProp(currentType, 'valueRegen', 'value_regen') ?? 1);
 
       const idTam = current.id;
       if (idTam === undefined || idTam === null) return;
@@ -197,8 +208,8 @@ export default function StartPage() {
       const currentInner = livingRef.current;
       const currentTypeInner = typeRef.current;
       if (!currentInner || !currentTypeInner) return;
-      const valueFaim = Number(currentTypeInner.valueFaim ?? (currentTypeInner as any).value_faim ?? 1);
-      const valueRegen = Number(currentTypeInner.valueRegen ?? (currentTypeInner as any).value_regen ?? 1);
+  const valueFaim = Number(getNumberProp(currentTypeInner, 'valueFaim', 'value_faim') ?? 1);
+  const valueRegen = Number(getNumberProp(currentTypeInner, 'valueRegen', 'value_regen') ?? 1);
       let pf = Number(currentInner.pf ?? 0);
       let pv = Number(currentInner.pv ?? 0);
       if (pf > 0) pf = Math.max(0, pf - valueFaim);

@@ -1,6 +1,7 @@
 # Tamago — Projet
 
 Ce dépôt contient l'ensemble du projet Tamago : front-end (Next.js), et services backend (Java/Maven) `feedservice/` et `tamagoservice/`.
+Il s'agit d'un petit projet fait dans le cadre de mes études dans le but d'apprendre et faire l'integration de A à Z d'un projet utilisant deux services.
 
 Résumé
 ------

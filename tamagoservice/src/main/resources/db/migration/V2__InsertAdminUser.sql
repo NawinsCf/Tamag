@@ -11,6 +11,6 @@
 */
 
 INSERT INTO users (pseudo, mdp, mail, est_admin)
-SELECT 'admin', '$2b$10$8A0pjZGtV4xNZ69gvllSqeMmmxH6SIhxp2W9/7S//a022HZ2G.7u2', '', TRUE
+SELECT 'admin', '$2b$10$nYREchUQLEHVGbjzQ.oAEOrdxwACVYp.8pzh9018OIApm9XTmgWeW', '', TRUE
 FROM DUAL
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE pseudo = 'admin');

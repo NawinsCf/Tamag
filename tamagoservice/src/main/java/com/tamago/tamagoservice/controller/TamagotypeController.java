@@ -22,6 +22,10 @@ public class TamagotypeController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
+    /**
+     * Crée un nouveau Tamagotype à partir des données fournies.
+     * Utilisé par l'interface d'administration.
+     */
     public TamagotypeResponse create(@Valid @RequestBody TamagotypeCreateRequest data) {
         Tamagotype t = service.create(data);
         TamagotypeResponse resp = new TamagotypeResponse();
@@ -39,13 +43,35 @@ public class TamagotypeController {
     }
     
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Retourne la liste complète des Tamagotypes.
+     */
     public ResponseEntity<java.util.List<TamagotypeResponse>> findAll() {
         java.util.List<Tamagotype> list = service.findAll();
         java.util.List<TamagotypeResponse> resp = list.stream().map(TamagotypeResponse::fromEntity).toList();
         return ResponseEntity.ok(resp);
     }
 
+    // Paginated endpoint for admin UI: supports page, size, optional q (search by name/descr), and sort (e.g. nom, -pv)
+    @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Endpoint paginé pour l'UI admin, supporte recherche (q) et tri (sort).
+     */
+    public ResponseEntity<org.springframework.data.domain.Page<TamagotypeResponse>> page(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "q", required = false) String q,
+            @RequestParam(value = "sort", required = false) String sort
+    ) {
+        org.springframework.data.domain.Page<com.tamago.tamagoservice.model.Tamagotype> p = service.page(page, size, q, sort);
+        org.springframework.data.domain.Page<TamagotypeResponse> resp = p.map(TamagotypeResponse::fromEntity);
+        return ResponseEntity.ok(resp);
+    }
+
     @GetMapping(value = "/active", produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Retourne les Tamagotypes actifs (filtre estActif=true).
+     */
     public ResponseEntity<java.util.List<TamagotypeResponse>> findAllActive() {
         java.util.List<Tamagotype> list = service.findAllActive();
         java.util.List<TamagotypeResponse> resp = list.stream().map(TamagotypeResponse::fromEntity).toList();
@@ -53,6 +79,9 @@ public class TamagotypeController {
     }
 
     @GetMapping(value = "/{id:\\d+}", produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Retourne un Tamagotype par son identifiant.
+     */
     public ResponseEntity<TamagotypeResponse> findById(@PathVariable("id") Long id) {
         Tamagotype t = service.findById(id);
         return ResponseEntity.ok(TamagotypeResponse.fromEntity(t));
@@ -60,6 +89,9 @@ public class TamagotypeController {
 
     // PUT = replace (full representation required)
     @PutMapping(value = "/{id:\\d+}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Remplace complètement un Tamagotype existant par la représentation fournie (PUT).
+     */
     public ResponseEntity<TamagotypeResponse> replace(@PathVariable("id") Long id, @Valid @RequestBody TamagotypeCreateRequest request) {
         Tamagotype replaced = service.replace(id, request);
         return ResponseEntity.ok(TamagotypeResponse.fromEntity(replaced));
@@ -67,6 +99,9 @@ public class TamagotypeController {
 
     // PATCH = partial update
     @PatchMapping(value = "/{id:\\d+}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Mise à jour partielle (PATCH) d'un Tamagotype.
+     */
     public ResponseEntity<TamagotypeResponse> patch(@PathVariable("id") Long id, @RequestBody com.tamago.tamagoservice.dto.TamagotypeUpdateRequest request) {
         Tamagotype updated = service.update(id, request);
         return ResponseEntity.ok(TamagotypeResponse.fromEntity(updated));
@@ -74,6 +109,9 @@ public class TamagotypeController {
 
     // PATCH to deactivate a Tamagotype
     @PatchMapping(value = "/{id:\\d+}/deactivate", produces = MediaType.APPLICATION_JSON_VALUE)
+    /**
+     * Désactive un Tamagotype (met estActif=false).
+     */
     public ResponseEntity<TamagotypeResponse> deactivate(@PathVariable("id") Long id) {
         Tamagotype t = service.deactivate(id);
         return ResponseEntity.ok(TamagotypeResponse.fromEntity(t));

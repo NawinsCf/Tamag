@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useContext } from 'react';
-import api from '../lib/api';
+import { sha256Hex } from '../lib/hash';
 import { AuthContext } from '../src/context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -17,10 +17,9 @@ export default function LoginForm({ showRegisterLink = false }: { showRegisterLi
     e.preventDefault();
     setMsg(null);
     try {
-      const res = await api.post('/api/auth/login', { pseudo, mdp });
-  login(res.data);
-  // navigate client-side with Next router
-  router.replace('/start');
+      const hashed = await sha256Hex(mdp);
+      await login({ pseudo, mdp: hashed });
+      router.replace('/start');
     } catch (err) {
       const error = err as unknown;
       try {

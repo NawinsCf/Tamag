@@ -2,6 +2,7 @@
 
 import React, { useState, useContext } from 'react';
 import api from '../../lib/api';
+import { sha256Hex } from '../../lib/hash';
 import { AuthContext } from '../../src/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -18,10 +19,11 @@ export default function RegisterPage() {
     e.preventDefault();
     setMsg(null);
     try {
-      const res = await api.post('/api/users', { pseudo, mdp, mail });
-      // log the user in and redirect to start
-      login(res.data);
-      router.replace('/start');
+      const hashed = await sha256Hex(mdp);
+  await api.post('/api/users', { pseudo, mdp: hashed, mail });
+  // now perform login flow that sets cookies and populates /me
+  await login({ pseudo, mdp: hashed });
+  router.replace('/start');
     } catch (err) {
       const error = err as unknown;
       let message = 'Unknown error';

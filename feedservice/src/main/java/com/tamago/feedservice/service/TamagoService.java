@@ -29,6 +29,15 @@ public class TamagoService {
     }
 
     public Tamago create(TamagoCreateRequest r, com.tamago.feedservice.model.Tamagotype tamagotype, com.tamago.feedservice.model.User user) {
+    /**
+     * Crée un nouvel objet Tamago en initialisant ses valeurs depuis le Tamagotype et
+     * en l'assignant à l'utilisateur fourni.
+     * @param r requête de création (nom optionnel)
+     * @param tamagotype modèle contenant pv/pf par défaut
+     * @param user propriétaire du Tamago
+     * @return l'entité Tamago persistée
+     */
+    
         Tamago t = new Tamago();
         t.setIdtype(tamagotype.getId());
         t.setIduser(user.getId());
@@ -44,6 +53,14 @@ public class TamagoService {
 
     @Transactional
     public Optional<Tamago> calculeFaim(Long tamagoId, Instant atInstant) {
+    /**
+     * Recalcule l'état (pf/pv/estVivant/lastcon) d'un Tamago entre lastcon et l'instant fourni
+     * (ou maintenant si atInstant==null). Utilise un verrou pessimiste pour éviter
+     * les conflits concurrents.
+     * @param tamagoId identifiant du Tamago
+     * @param atInstant instant cible pour le calcul (optionnel)
+     * @return Optional contenant l'entité mise à jour ou empty si non trouvé
+     */
         // obtain pessimistic lock for update to avoid concurrent modifications
         Tamago t = repo.findByIdForUpdate(tamagoId).orElse(null);
         if (t == null) return Optional.empty();
@@ -109,6 +126,14 @@ public class TamagoService {
 
     @Transactional
     public Optional<Tamago> updateTamago(Long tamagoId, Boolean kill, String nom) {
+    /**
+     * Mise à jour ciblée d'un Tamago : possibilité de le tuer (kill=true) ou
+     * de renommer. Ne persistera que si des modifications ont eu lieu.
+     * @param tamagoId identifiant
+     * @param kill si true met pv/pf=0 et estVivant=false
+     * @param nom nouveau nom (peut être vide pour rétablir le nom du Tamagotype)
+     * @return Optional contenant l'entité (mise à jour ou non) ou empty si non trouvé
+     */
         // obtain pessimistic lock for update to avoid concurrent modifications
         Tamago t = repo.findByIdForUpdate(tamagoId).orElse(null);
         if (t == null) return Optional.empty();
@@ -145,6 +170,12 @@ public class TamagoService {
 
     @Transactional
     public Optional<Tamago> nourrirTamago(Long tamagoId) {
+    /**
+     * Nourrit un Tamago vivant : restaure pv/pf aux valeurs par défaut du Tamagotype
+     * et met à jour lastcon. Retourne l'entité persistée.
+     * @param tamagoId identifiant du Tamago
+     * @return Optional avec l'entité mise à jour ou empty si non trouvé
+     */
         // lock row for update
         Tamago t = repo.findByIdForUpdate(tamagoId).orElse(null);
         if (t == null) return Optional.empty();
@@ -167,5 +198,15 @@ public class TamagoService {
 
         // Tamago is dead; do nothing
         return Optional.of(t);
+    }
+
+    public org.springframework.data.domain.Page<Tamago> page(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        return repo.findAll(pageable);
+    }
+
+    // Return all tamagos (used by controller's non-paginated endpoint)
+    public java.util.List<Tamago> findAll() {
+        return repo.findAll();
     }
 }

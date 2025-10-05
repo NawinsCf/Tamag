@@ -1,6 +1,7 @@
 # Tamago — Projet
 
 Ce dépôt contient l'ensemble du projet Tamago : front-end (Next.js), et services backend (Java/Maven) `feedservice/` et `tamagoservice/`.
+Il s'agit d'un petit projet fait dans le cadre de mes études dans le but d'apprendre et faire l'integration de A à Z d'un projet utilisant deux services.
 
 Résumé
 ------
@@ -44,33 +45,3 @@ npm install
 npm run dev
 ```
 
-Git — commandes prêtes à exécuter (PowerShell)
----------------------------------------------
-Remplace `<REMOTE_URL>` par l'URL de ton dépôt distant (GitHub/GitLab/Bitbucket).
-
-Initialiser et pousser le dépôt (si git non initialisé) :
-
-```powershell
-cd C:\BAC4\Tamago_VF\Tamago
-# configure l'utilisateur si nécessaire
-git config --global user.name "Ton Nom" ;
-git config --global user.email "ton.email@example.com" ;
-# initialise et pousse
-git init ;
-git add . ;
-git commit -m "Initial commit — Tamago project" ;
-git branch -M main ;
-git remote add origin <REMOTE_URL> ;
-git push -u origin main
-```
-
-Mettre à jour et pousser des changements :
-
-```powershell
-cd C:\BAC4\Tamago_VF\Tamago
-git add -A ;
-git commit -m "Mise à jour: front + logos + README" ;
-git push
-```
-
----

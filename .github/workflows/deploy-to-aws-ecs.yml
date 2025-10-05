@@ -1,0 +1,102 @@
+name: Build and deploy to AWS ECS (ECR + Fargate)
+
+on:
+  push:
+    branches: [ main, master ]
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push feedservice image
+        id: feed-build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./feedservice
+          file: ./feedservice/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FEED_REPO }}:${{ github.sha }}
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FEED_REPO }}:latest
+
+      - name: Build and push tamagoservice image
+        id: tamo-build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./tamagoservice
+          file: ./tamagoservice/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_TAMAGO_REPO }}:${{ github.sha }}
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_TAMAGO_REPO }}:latest
+
+      - name: Build and push tamago-front image
+        id: front-build
+        uses: docker/build-push-action@v5
+        with:
+          context: ./tamago-front
+          file: ./tamago-front/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FRONT_REPO }}:${{ github.sha }}
+            ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FRONT_REPO }}:latest
+
+      - name: Render feedservice task definition
+        id: render-feed
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ecs-task-definitions/feedservice-taskdef.json
+          container-name: feedservice
+          image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FEED_REPO }}:${{ github.sha }}
+
+      - name: Deploy feedservice to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-feed.outputs.task-definition }}
+          service: ${{ secrets.ECS_FEED_SERVICE }}
+          cluster: ${{ secrets.ECS_CLUSTER }}
+
+      - name: Render tamagoservice task definition
+        id: render-tamo
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ecs-task-definitions/tamagoservice-taskdef.json
+          container-name: tamagoservice
+          image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_TAMAGO_REPO }}:${{ github.sha }}
+
+      - name: Deploy tamagoservice to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-tamo.outputs.task-definition }}
+          service: ${{ secrets.ECS_TAMAGO_SERVICE }}
+          cluster: ${{ secrets.ECS_CLUSTER }}
+
+      - name: Render tamago-front task definition
+        id: render-front
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ecs-task-definitions/tamago-front-taskdef.json
+          container-name: tamago-front
+          image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_FRONT_REPO }}:${{ github.sha }}
+
+      - name: Deploy tamago-front to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-front.outputs.task-definition }}
+          service: ${{ secrets.ECS_FRONT_SERVICE }}
+          cluster: ${{ secrets.ECS_CLUSTER }}

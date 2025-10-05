@@ -1,0 +1,37 @@
+{
+  "family": "tamagoservice-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "tamagoservice",
+      "image": "REPLACE_WITH_IMAGE",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "SERVER_PORT", "value": "8080" },
+        { "name": "APP_JWT_SECRET", "value": "REPLACE_SECRET" },
+        { "name": "SPRING_DATASOURCE_URL", "value": "jdbc:mysql://DB_HOST:3306/tamag?useSSL=false&allowPublicKeyRetrieval=true" },
+        { "name": "SPRING_DATASOURCE_USERNAME", "value": "root" },
+        { "name": "SPRING_DATASOURCE_PASSWORD", "value": "root" }
+      ],
+      "mountPoints": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/tamagoservice",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

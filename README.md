@@ -74,5 +74,3 @@ git push
 ```
 
 ---
-
-Si tu veux, je peux exécuter ces commandes ici (si `git` est installé dans l'environnement). Sinon, tu peux les lancer depuis PowerShell localement.

@@ -28,6 +28,41 @@ Prérequis
 - Java 17 + Maven (si tu veux lancer les services Java localement sans Docker)
 - Node.js (version compatible, npm) pour `tamago-front`
 - Git (pour pousser/puller)
+-----------------------------------------
+cd feedservice
+git checkout -b feature/ma-fonction
+- Des scripts Node d'intégration existent dans `scripts/` (ex.: `choose-cross-host.js`) pour tester login → refresh → appel cross-service. Ils peuvent être lancés localement (ils utilisent fetch + tough-cookie pour simuler un navigateur).
+--------------
+- `DEPLOY_USER` — SSH user (e.g. `ec2-user`)
+````markdown
+# Tamago — Projet
+
+Ce dépôt contient le projet Tamago :
+- Frontend : `tamago-front/` (Next.js, App Router, TypeScript)
+- Backends : `feedservice/` et `tamagoservice/` (Spring Boot, Java, Maven)
+- Base de données : MySQL (déclarée dans `docker-compose.yml`)
+
+Résumé
+------
+Le front a été développé initialement comme prototype pour valider les parcours utilisateurs et tester l'intégration avec les services backend. Les fonctions principales sont implémentées.
+
+But du README
+-------------
+Fournir des instructions claires pour démarrer le projet en local (Docker Compose), lancer le front en développement, et résoudre les problèmes courants rencontrés en dev.
+
+Architecture et ports
+---------------------
+- `db` (MySQL) : 3306
+- `feedservice` (backend tamago/feeding) : host 8081 -> container 8080
+- `tamagoservice` (backend principal / auth / tamagotype) : host 8082 -> container 8080
+- `tamago-front` (Next.js dev) : 3000 (local, pas dockerisé par défaut)
+
+Prérequis
+---------
+- Docker & Docker Compose
+- Java 17 + Maven (si tu veux lancer les services Java localement sans Docker)
+- Node.js (version compatible, npm) pour `tamago-front`
+- Git (pour pousser/puller)
 
 Démarrage rapide (Docker Compose)
 --------------------------------
@@ -56,7 +91,7 @@ npm run dev
 Notes importantes pour le développement
 --------------------------------------
 - En dev le front utilise des rewrites pour proxyfier `/api/*` vers les backends afin de préserver les cookies HttpOnly entre le navigateur et les services. Si tu modifies `next.config.ts` (rewrites), redémarre le serveur Next.
-- Si tu changes `next.config.ts` ou installe des dépendances, stoppe et relance `npm run dev`.
+- Si tu changes `next.config.ts` ou installes des dépendances, stoppe et relance `npm run dev`.
 - Lors des développements sur les backends, si tu utilises Docker, rebuild/recreate le service :
 
 ```bash
@@ -71,8 +106,8 @@ Variables d'environnement utiles
   - `NEXT_PUBLIC_TAMAGOSERVICE_BASE=http://localhost:8082` (dev)
 
 - Pour `feedservice` et `tamagoservice` (variables passées au container ou via Docker Compose) :
-  - `APP_JWT_SECRET` : secret partagé pour signer/verifier les JWT d'accès (dev : utiliser la même valeur pour les services qui vérifient le token)
-  - `SPRING_DATASOURCE_*` : si tu wishes override DB connection
+  - `APP_JWT_SECRET` : secret partagé pour signer/vérifier les JWT d'accès (dev : utiliser la même valeur pour les services qui vérifient le token)
+  - `SPRING_DATASOURCE_*` : si tu souhaites override la connexion DB
 
 Fonctionnement rapide de l'auth (pour debug)
 -----------------------------------------
@@ -108,21 +143,21 @@ Voici un petit flot sûr à exécuter depuis Git Bash. Remplace le message et la
 
 ```bash
 git status
-git rev-parse --abbrev-ref HEAD
+APP_JWT_SECRET=replace_with_secure_jwt_secret
 ```
 
 2) Synchroniser & rebaser tes changements locaux sur `origin` :
 
 ```bash
 git fetch origin
-git pull --rebase origin $(git rev-parse --abbrev-ref HEAD)
+SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/tamag
 ```
 
 3) Ajouter et valider :
 
 ```bash
 git add -A
-git commit -m "Ton message clair ici"
+SPRING_DATASOURCE_USERNAME=root
 ```
 
 4) Pousser sur la branche courante :
@@ -144,7 +179,7 @@ git push --force-with-lease origin $(git rev-parse --abbrev-ref HEAD)
 ```bash
 git checkout -b feature/ma-fonction
 # changements, commit
-git push -u origin feature/ma-fonction
+SPRING_DATASOURCE_PASSWORD=replace_with_db_password
 ```
 
 Tests rapides & scripts d'intégration
@@ -242,5 +277,3 @@ docker ps
 Updated deployment instructions added. If you want, I can also:
 - Add a small script to the repo to create a `PROD_DOTENV` from a local `.env` file and print instructions to copy it into GitHub Secrets safely.
 - Add automatic cleanup of `~/.docker/config.json` on the remote host after logout.
-
-Tell me which of the above you'd like next and I'll implement it.

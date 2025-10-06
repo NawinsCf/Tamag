@@ -6,9 +6,6 @@ Résumé
 ------
 Le front a été développé initialement comme prototype (front temporaire) pour valider les parcours utilisateurs et tester l'intégration avec les services backend. Les fonctions minimales principales sont implémentées.
 
-<<<<<<< HEAD
-# Tamago — Projet
-
 Ce dépôt contient le projet Tamago :
 - Frontend : `tamago-front/` (Next.js, App Router, TypeScript)
 - Backends : `feedservice/` et `tamagoservice/` (Spring Boot, Java, Maven)
@@ -266,50 +263,6 @@ On the AWS host (`DEPLOY_HOST`):
 
 ```bash
 ssh -i path/to/key.pem $DEPLOY_USER@$DEPLOY_HOST
-NEXT_PUBLIC_FEEDSERVICE_BASE=http://your-server:8081
-NEXT_PUBLIC_TAMAGOSERVICE_BASE=http://your-server:8082
-```
-
-### Security notes
-- Do not commit `.env` with production secrets. Put production variables in `PROD_DOTENV` secret in GitHub.
-- Use registry tokens instead of account passwords.
-- Rotate tokens/keys regularly.
-
----
-
-Updated deployment instructions added. If you want, I can also:
-- Add a small script to the repo to create a `PROD_DOTENV` from a local `.env` file and print instructions to copy it into GitHub Secrets safely.
-- Add automatic cleanup of `~/.docker/config.json` on the remote host after logout.
-
-Tell me which of the above you'd like next and I'll implement it.
-
-````
-TAMAGOSERVICE_STORAGE_IMG_DIR=IMG
-APP_COOKIE_ACCESS_NAME=tmg_at
-APP_COOKIE_REFRESH_NAME=tmg_rt
-APP_COOKIE_SECURE=true
-APP_COOKIE_SAME_SITE=Strict
-APP_COOKIE_DOMAIN=yourdomain.com
-APP_COOKIE_PATH=/
-```
-
-### Server prerequisites
-On the AWS host (`DEPLOY_HOST`):
-- Docker and Docker Compose must be installed and available to the `DEPLOY_USER`.
-- The `DEPLOY_USER` must have permission to run `docker` (either via `sudo` or being in the `docker` group).
-- Ensure necessary ports are open in the instance security group (80/443 and any backend ports you want to expose).
-
-### Triggering a deploy
-1. Create a release on GitHub (manually or via `release-please`).
-2. The `deploy-on-release` workflow runs: it copies `docker-compose.prod.yml` and writes `PROD_DOTENV` to the server, logs in to Docker (if creds provided), pulls images and restarts containers.
-
-### Troubleshooting tips
-- If the workflow fails with SSH errors: verify `DEPLOY_HOST`, `DEPLOY_USER`, and `DEPLOY_SSH_KEY` are correct and that the key is allowed on the server.
-- If `docker compose pull` fails with unauthorized errors: check `DOCKER_USERNAME`/`DOCKER_PASSWORD` (use a registry token, not an account password).
-- Verify server logs via SSH:
-
-```bash
-ssh -i path/to/key.pem $DEPLOY_USER@$DEPLOY_HOST
 docker compose -f ~/deploy/docker-compose.prod.yml logs -f
 docker ps
 ```
@@ -324,6 +277,3 @@ docker ps
 Updated deployment instructions added. If you want, I can also:
 - Add a small script to the repo to create a `PROD_DOTENV` from a local `.env` file and print instructions to copy it into GitHub Secrets safely.
 - Add automatic cleanup of `~/.docker/config.json` on the remote host after logout.
-
-Tell me which of the above you'd like next and I'll implement it.
->>>>>>> 984a49d (Message clair en français décrivant les changements (ex: "Docs: commentaires Javadoc FR + README mis à jour"))

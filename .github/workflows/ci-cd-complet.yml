@@ -88,6 +88,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node-
 
+      - name: Warn if no package-lock.json
+        working-directory: ./tamago-front
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "::warning file=tamago-front/package.json::No package-lock.json found in tamago-front. The job will fall back to 'npm install' which is less reproducible. Consider committing a lockfile for deterministic builds.";
+          else
+            echo "Lockfile found: package-lock.json";
+          fi
+
       - name: Install Dependencies
         run: |
           # Try npm ci (fast and reproducible) and fall back to npm install if it fails (no lockfile)

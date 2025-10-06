@@ -232,6 +232,22 @@ jobs:
           name: frontend-dist
           path: ./tamago-front
 
+      - name: Prepare .npmrc for Docker build
+        run: |
+          # Ensure the build context contains a .npmrc so the Dockerfile COPY doesn't fail.
+          if [ -f ./tamago-front/.npmrc ]; then
+            echo ".npmrc already present in tamago-front"
+          else
+            if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
+              printf "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}\n" > ./tamago-front/.npmrc
+              echo "Created .npmrc with NPM_TOKEN (token not printed)"
+            else
+              # Create an empty file so the Dockerfile COPY succeeds for public packages
+              touch ./tamago-front/.npmrc
+              echo "Created empty .npmrc in tamago-front"
+            fi
+          fi
+
       - name: Docker Login to GHCR (GITHUB_TOKEN or GHCR_PAT)
         run: |
           if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then

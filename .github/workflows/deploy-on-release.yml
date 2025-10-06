@@ -31,20 +31,6 @@ jobs:
           source: "docker-compose.prod.yml"
           target: "~/deploy/docker-compose.prod.yml"
 
-      - name: Write .env on remote from secret
-        if: ${{ secrets.PROD_DOTENV != '' }}
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT }}
-          script: |
-            mkdir -p ~/deploy
-            cat > ~/deploy/.env <<'EOF'
-${{ secrets.PROD_DOTENV }}
-EOF
-
       - name: Copy deploy script to remote
         uses: appleboy/scp-action@v0.1.5
         with:
@@ -55,8 +41,7 @@ EOF
           source: "deploy.sh"
           target: "~/deploy/deploy.sh"
 
-      - name: Remote docker login & run deploy
-        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+      - name: Remote deploy (write .env, optional login, pull & start)
         uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -65,39 +50,28 @@ EOF
           port: ${{ secrets.DEPLOY_SSH_PORT }}
           script: |
             set -e
-            # ensure deploy dir exists and script is present
             mkdir -p ~/deploy
-            chmod +x ~/deploy/deploy.sh || true
-            # perform docker login using secrets passed from Actions (piped to stdin)
-            echo "Logging in to Docker registry on remote host"
-            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin || {
-              echo "Docker login failed" >&2
-              exit 1
-            }
-            # run deploy script which will pull & start containers
-            ~/deploy/deploy.sh
-            # logout after deploy to remove cached credentials
-            docker logout || true
+            # write .env only if provided
+            if [ -n "${{ secrets.PROD_DOTENV }}" ]; then
+              cat > ~/deploy/.env <<'EOF'
+${{ secrets.PROD_DOTENV }}
+EOF
+            fi
 
-      - name: Remote deploy without Docker login (public images)
-        if: ${{ secrets.DOCKER_USERNAME == '' || secrets.DOCKER_PASSWORD == '' }}
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT }}
-          script: |
-            set -e
             chmod +x ~/deploy/deploy.sh || true
+
+            # if DOCKER_* creds provided, login on remote to pull private images
+            if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
+              echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin || {
+                echo "Docker login failed" >&2
+                exit 1
+              }
+            fi
+
+            # run deploy script (will docker compose pull && up -d)
             ~/deploy/deploy.sh
 
-      - name: Verify deployment
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT }}
-          script: |
-            docker ps
+            # logout if we logged in
+            if [ -n "${{ secrets.DOCKER_USERNAME }}" ] && [ -n "${{ secrets.DOCKER_PASSWORD }}" ]; then
+              docker logout || true
+            fi

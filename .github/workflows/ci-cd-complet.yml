@@ -1,0 +1,259 @@
+name: CI/CD Complet (Build, Test, Release & Deploy)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
+jobs:
+  # -----------------------------------------------------------
+  # JOB 1: Build et Tests Unitaires pour les services Java (Maven)
+  # -----------------------------------------------------------
+  java_build:
+    name: Build Services Java (Maven)
+    runs-on: ubuntu-latest
+    env:
+      JAVA_VERSION: '17'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build feedservice (mvn package)
+        working-directory: ./feedservice
+        run: |
+          if [ -f ./mvnw ]; then
+            chmod +x ./mvnw
+            ./mvnw -B -DskipTests package
+          else
+            mvn -B -DskipTests package
+          fi
+
+      - name: Build tamagoservice (mvn package)
+        working-directory: ./tamagoservice
+        run: |
+          if [ -f ./mvnw ]; then
+            chmod +x ./mvnw
+            ./mvnw -B -DskipTests package
+          else
+            mvn -B -DskipTests package
+          fi
+
+      - name: Upload Java Artifacts (JARs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-artifacts
+          path: |
+            **/target/*.jar
+            !**/target/*-sources.jar
+            !**/target/*-javadoc.jar
+
+  # -----------------------------------------------------------
+  # JOB 2: Build du Frontend (Next.js)
+  # -----------------------------------------------------------
+  frontend_build:
+    name: Build Frontend (Next.js)
+    runs-on: ubuntu-latest
+    needs: java_build
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: tamago-front/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+        working-directory: ./tamago-front
+
+      - name: Run Frontend Build (Next.js)
+        run: npm run build
+        working-directory: ./tamago-front
+
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: |
+            tamago-front/.next
+            tamago-front/public
+
+  # -----------------------------------------------------------
+  # JOB 3: Versioning (Release Please) et Préparation des Assets
+  # -----------------------------------------------------------
+  release_and_versioning:
+    name: Automated Versioning (Release Please)
+    runs-on: ubuntu-latest
+    needs: [java_build, frontend_build]
+
+    if: github.event_name != 'push' || !contains(github.event.head_commit.message, 'chore(release):')
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      upload_url: ${{ steps.release.outputs.upload_url }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Java Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: java-artifacts
+          path: ./.zip-content
+
+      - name: Verify JARs presence
+        run: |
+          if [ -z "$(find ./.zip-content -name "*.jar" -print -quit)" ]; then
+            echo "::error::No JAR files found in ./.zip-content. Deployment aborted."
+            ls -R ./.zip-content || true
+            exit 1
+          fi
+          echo "JAR files confirmed present."
+
+      - name: Install ZIP Utility
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Run Release Please
+        uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: simple
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Zip Java Artifacts for Release
+        id: zip_java
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          VERSION=${{ steps.release.outputs.tag_name }}
+          ZIP_NAME="java-artifacts-$VERSION.zip"
+          zip -r "$ZIP_NAME" ./.zip-content
+          echo "ZIP_FILE=$ZIP_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload Java Artifacts to Release
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ${{ steps.zip_java.outputs.ZIP_FILE }}
+          asset_name: ${{ steps.zip_java.outputs.ZIP_FILE }}
+          asset_content_type: application/zip
+
+  # -----------------------------------------------------------
+  # JOB 4: Déploiement Docker du Frontend (GHCR)
+  # -----------------------------------------------------------
+  frontend_deploy:
+    name: Docker Deploy Frontend to GHCR
+    runs-on: ubuntu-latest
+    needs: [frontend_build, release_and_versioning]
+    if: ${{ needs.release_and_versioning.outputs.release_created }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Frontend Dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: ./tamago-front
+
+      - name: Docker Login to GHCR (GITHUB_TOKEN or GHCR_PAT)
+        run: |
+          if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          elif [ -n "${{ secrets.GHCR_PAT }}" ]; then
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          else
+            echo "No token available for GHCR login"; exit 1
+          fi
+
+      - name: Set Image Metadata
+        id: meta
+        run: |
+          VERSION=${{ needs.release_and_versioning.outputs.tag_name }}
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/tamago-front"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Docker Image for Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./tamago-front
+          file: ./tamago-front/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.IMAGE_NAME }}:${{ steps.meta.outputs.VERSION }}
+            ${{ steps.meta.outputs.IMAGE_NAME }}:latest
+
+  # -----------------------------------------------------------
+  # JOB 5: Déploiement Docker (Services Java)
+  # -----------------------------------------------------------
+  deploy_java_services:
+    name: Docker Deploy Java Services to GHCR
+    runs-on: ubuntu-latest
+    needs: [release_and_versioning, frontend_deploy]
+    if: ${{ needs.release_and_versioning.outputs.release_created }}
+
+    strategy:
+      matrix:
+        service: [feedservice, tamagoservice]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Docker Login to GHCR (GITHUB_TOKEN or GHCR_PAT)
+        run: |
+          if [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          elif [ -n "${{ secrets.GHCR_PAT }}" ]; then
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          else
+            echo "No token available for GHCR login"; exit 1
+          fi
+
+      - name: Set Image Metadata and JAR Name
+        id: meta
+        run: |
+          VERSION=${{ needs.release_and_versioning.outputs.tag_name }}
+          SERVICE_NAME=${{ matrix.service }}
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/$SERVICE_NAME"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Docker Image for ${{ matrix.service }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.IMAGE_NAME }}:${{ steps.meta.outputs.VERSION }}
+            ${{ steps.meta.outputs.IMAGE_NAME }}:latest

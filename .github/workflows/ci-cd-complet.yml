@@ -130,9 +130,10 @@ jobs:
       pull-requests: write
 
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      upload_url: ${{ steps.release.outputs.upload_url }}
+      # We will populate outputs from the 'get_release' step (robust even if release was created by a different run)
+      release_created: ${{ steps.get_release.outputs.release_created }}
+      tag_name: ${{ steps.get_release.outputs.tag_name }}
+      upload_url: ${{ steps.get_release.outputs.upload_url }}
 
     steps:
       - name: Checkout Code
@@ -162,6 +163,35 @@ jobs:
         with:
           release-type: simple
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get latest release info (fallback)
+        id: get_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = context.repo;
+            try {
+              const res = await github.rest.repos.getLatestRelease(repo);
+              core.setOutput('tag_name', res.data.tag_name || '');
+              core.setOutput('release_created', 'true');
+              core.setOutput('upload_url', res.data.upload_url || '');
+            } catch (e) {
+              // no release found or error
+              core.setOutput('tag_name', '');
+              core.setOutput('release_created', 'false');
+              core.setOutput('upload_url', '');
+            }
+
+      - name: Debug release outputs
+        run: |
+          echo "--- release step outputs ---"
+          echo "steps.release.outputs.tag_name=${{ steps.release.outputs.tag_name }}"
+          echo "steps.release.outputs.release_created=${{ steps.release.outputs.release_created }}"
+          echo "steps.release.outputs.upload_url=${{ steps.release.outputs.upload_url }}"
+          echo "--- get_release outputs ---"
+          echo "steps.get_release.outputs.tag_name=${{ steps.get_release.outputs.tag_name }}"
+          echo "steps.get_release.outputs.release_created=${{ steps.get_release.outputs.release_created }}"
+          echo "steps.get_release.outputs.upload_url=${{ steps.get_release.outputs.upload_url }}"
 
       - name: Zip Java Artifacts for Release
         id: zip_java

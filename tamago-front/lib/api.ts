@@ -1,16 +1,19 @@
 import axios from 'axios';
 
 // Default API (tamagoservice)
+// Prefer explicit NEXT_PUBLIC_API_BASE_URL, fall back to NEXT_PUBLIC_TAMAGOSERVICE_BASE or
+// Docker service hostname. Empty string keeps relative paths which allow Next rewrites in dev.
+const tamagoBase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_TAMAGOSERVICE_BASE || '';
 const api = axios.create({
-  // Use relative base so the Next dev server can proxy /api requests to the backend.
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '',
+  baseURL: tamagoBase,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });
 
 // Feedservice API (user / tamago endpoints)
+const feedBase = process.env.NEXT_PUBLIC_FEEDSERVICE_BASE || '';
 const feedApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_FEEDSERVICE_BASE || '',
+  baseURL: feedBase,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });

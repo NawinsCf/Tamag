@@ -9,7 +9,7 @@ services:
       - db-data:/var/lib/mysql
 
   feedservice:
-    image: ${REGISTRY}/${REPO_PREFIX:-tamago}/feedservice:${IMAGE_TAG}
+    image: ghcr.io/nawinscf/feedservice:latest
     ports:
       - "8081:8080"
     environment:
@@ -20,7 +20,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
 
   tamagoservice:
-    image: ${REGISTRY}/${REPO_PREFIX:-tamago}/tamagoservice:${IMAGE_TAG}
+    image: ghcr.io/nawinscf/tamagoservice:latest
     ports:
       - "8082:8080"
     environment:
@@ -29,6 +29,17 @@ services:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+  tamago-front:
+    image: ghcr.io/nawinscf/tamago-front:latest
+    ports:
+      - "3000:3000"
+    environment:
+      # disable Next.js telemetry in production by default
+      NEXT_TELEMETRY_DISABLED: 1
+    depends_on:
+      - tamagoservice
+      - feedservice
 
 volumes:
   db-data:

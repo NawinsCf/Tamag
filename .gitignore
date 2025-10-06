@@ -1,10 +1,31 @@
+# Ignore local private key
+Tamag.pem
+
+# Terraform sensitive files
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/.terraform
+
+# Node / Next build artifacts (if any)
+node_modules/
+.next/
 # Node
 node_modules/
+# Ignore local private key
+Tamag.pem
+
+# Terraform sensitive files
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/.terraform
+
+# Node / Next build artifacts
+node_modules/
+.next/
 npm-debug.log*
 package-lock.json
 pnpm-lock.yaml
 .vscode/
-.next/
 
 # Java / Maven
 target/
@@ -22,3 +43,8 @@ Thumbs.db
 # IDEs
 .idea/
 *.iml
+
+# Environment files
+.env
+.env.local
+.env.*

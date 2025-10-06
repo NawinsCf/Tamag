@@ -248,7 +248,20 @@ public class AuthController {
     public ResponseEntity<?> me(HttpServletRequest request) {
         Object o = request.getAttribute("authUserId");
         if (o == null) return ResponseEntity.status(401).build();
-        Long id = (Long) o;
+        Long id = null;
+        try {
+            if (o instanceof Number) {
+                id = ((Number) o).longValue();
+            } else if (o instanceof String) {
+                id = Long.parseLong((String) o);
+            } else {
+                logger.warn("Unexpected authUserId attribute type: {}", o == null ? "null" : o.getClass().getName());
+                return ResponseEntity.status(401).build();
+            }
+        } catch (Exception ex) {
+            logger.error("Failed to parse authUserId attribute: {}", o, ex);
+            return ResponseEntity.status(500).build();
+        }
         Optional<User> u = userService.getUserById(id);
         if (u.isEmpty()) return ResponseEntity.status(401).build();
         User user = u.get();

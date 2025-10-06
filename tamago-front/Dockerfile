@@ -3,9 +3,13 @@ WORKDIR /app
 
 # Install dependencies and build
 COPY package.json package-lock.json* ./
-COPY .npmrc .npmrc
+ARG NPM_TOKEN
 RUN corepack enable || true
-RUN npm ci --silent
+# If an NPM token is provided as a build-arg, create a minimal .npmrc so private installs work.
+# This avoids failing the build when .npmrc is not present in the context.
+RUN if [ -n "$NPM_TOKEN" ]; then printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > .npmrc; fi
+# Try npm ci (preferred) and fall back to npm install if ci fails (e.g., missing lockfile)
+RUN npm ci --silent || npm install --no-audit --no-fund --silent
 
 COPY . .
 RUN npm run build

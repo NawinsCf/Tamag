@@ -23,8 +23,7 @@ export async function sha256Hex(input: string): Promise<string> {
   // Fallback 2: Node's crypto (when running in Node environments)
   try {
     // dynamic import to avoid bundling Node-only module into browser bundle
-    // @ts-ignore
-    const nodeCrypto = await import('crypto');
+    const nodeCrypto: any = await import('crypto');
     if (nodeCrypto && typeof nodeCrypto.createHash === 'function') {
       return nodeCrypto.createHash('sha256').update(input, 'utf8').digest('hex');
     }

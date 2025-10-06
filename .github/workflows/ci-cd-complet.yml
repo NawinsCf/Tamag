@@ -246,7 +246,9 @@ jobs:
         id: meta
         run: |
           VERSION=${{ needs.release_and_versioning.outputs.tag_name }}
-          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/tamago-front"
+          # Ensure repository owner is lowercased because Docker requires lowercase repository names
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="ghcr.io/$OWNER_LOWER/tamago-front"
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
@@ -292,7 +294,9 @@ jobs:
         run: |
           VERSION=${{ needs.release_and_versioning.outputs.tag_name }}
           SERVICE_NAME=${{ matrix.service }}
-          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/$SERVICE_NAME"
+          # Ensure repository owner is lowercased because Docker requires lowercase repository names
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="ghcr.io/$OWNER_LOWER/$SERVICE_NAME"
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 

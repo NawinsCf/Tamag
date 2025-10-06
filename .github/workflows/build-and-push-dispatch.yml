@@ -1,0 +1,63 @@
+name: Manual build & push images to GHCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build (branch name or commit SHA)'
+        required: true
+        default: 'main'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout specified ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GHCR
+        if: ${{ secrets.GHCR_PAT != '' }}
+        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and push feedservice
+        env:
+          IMAGE_REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository_owner }}/feedservice
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          docker buildx build --platform linux/amd64 -t $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -f ./feedservice/Dockerfile ./feedservice --push
+
+      - name: Build and push tamagoservice
+        env:
+          IMAGE_REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository_owner }}/tamagoservice
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          docker buildx build --platform linux/amd64 -t $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -f ./tamagoservice/Dockerfile ./tamagoservice --push
+
+      - name: Build and push tamago-front
+        env:
+          IMAGE_REGISTRY: ghcr.io
+          IMAGE_NAME: ${{ github.repository_owner }}/tamago-front
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          docker buildx build --platform linux/amd64 -t $IMAGE_REGISTRY/$IMAGE_NAME:$IMAGE_TAG -f ./tamago-front/Dockerfile ./tamago-front --push
+
+      - name: Output pushed image tags
+        run: |
+          echo "feedservice=ghcr.io/${{ github.repository_owner }}/feedservice:sha-${{ github.sha }}"
+          echo "tamagoservice=ghcr.io/${{ github.repository_owner }}/tamagoservice:sha-${{ github.sha }}"
+          echo "tamago-front=ghcr.io/${{ github.repository_owner }}/tamago-front:sha-${{ github.sha }}"

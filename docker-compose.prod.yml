@@ -32,13 +32,19 @@ services:
 
   tamago-front:
     image: ghcr.io/nawinscf/tamago-front:latest
+    # Build the front image on the host so Next is compiled with the correct
+    # INTERNAL_* build args (rewrites are baked at build-time). This is useful
+    # when deploying to an environment that can build the image locally (EC2).
     build:
       context: ./tamago-front
       args:
+        # Optional token for private npm installs
         NPM_TOKEN: ${NPM_TOKEN}
+        # Public client-visible URLs (usually empty in prod to keep relative requests)
         NEXT_PUBLIC_FEEDSERVICE_BASE: ${NEXT_PUBLIC_FEEDSERVICE_BASE:-}
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
         NEXT_PUBLIC_TAMAGOSERVICE_BASE: ${NEXT_PUBLIC_TAMAGOSERVICE_BASE:-}
+        # INTERNAL_* are used by Next during the build to create server-side rewrites
         INTERNAL_FEEDSERVICE_BASE: ${INTERNAL_FEEDSERVICE_BASE:-http://feedservice:8080}
         INTERNAL_TAMAGOSERVICE_BASE: ${INTERNAL_TAMAGOSERVICE_BASE:-http://tamagoservice:8080}
     ports:

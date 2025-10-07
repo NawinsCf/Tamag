@@ -12,6 +12,23 @@ RUN if [ -n "$NPM_TOKEN" ]; then printf "//registry.npmjs.org/:_authToken=%s\n" 
 RUN npm ci --silent || npm install --no-audit --no-fund --silent
 
 COPY . .
+# Allow build-time environment variables to be injected so Next's build can bake
+# correct values for rewrites and NEXT_PUBLIC_* variables. These are provided
+# as --build-arg when building the image (or via docker-compose build args).
+# Define ARGs so they can be passed in, then promote them to ENV so `npm run build`
+# sees them in process.env during the build step.
+ARG NEXT_PUBLIC_FEEDSERVICE_BASE=""
+ARG NEXT_PUBLIC_API_BASE_URL=""
+ARG NEXT_PUBLIC_TAMAGOSERVICE_BASE=""
+ARG INTERNAL_FEEDSERVICE_BASE=""
+ARG INTERNAL_TAMAGOSERVICE_BASE=""
+
+ENV NEXT_PUBLIC_FEEDSERVICE_BASE=${NEXT_PUBLIC_FEEDSERVICE_BASE}
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXT_PUBLIC_TAMAGOSERVICE_BASE=${NEXT_PUBLIC_TAMAGOSERVICE_BASE}
+ENV INTERNAL_FEEDSERVICE_BASE=${INTERNAL_FEEDSERVICE_BASE}
+ENV INTERNAL_TAMAGOSERVICE_BASE=${INTERNAL_TAMAGOSERVICE_BASE}
+
 RUN npm run build
 
 FROM node:20-bullseye-slim

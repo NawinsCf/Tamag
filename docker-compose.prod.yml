@@ -37,10 +37,15 @@ services:
     environment:
       # disable Next.js telemetry in production by default
       NEXT_TELEMETRY_DISABLED: 1
-      # Public URLs consumed by the front. Use Docker service names as sensible defaults
-      NEXT_PUBLIC_FEEDSERVICE_BASE: ${NEXT_PUBLIC_FEEDSERVICE_BASE:-http://feedservice:8080}
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://tamagoservice:8080}
-      NEXT_PUBLIC_TAMAGOSERVICE_BASE: ${NEXT_PUBLIC_TAMAGOSERVICE_BASE:-http://tamagoservice:8080}
+      # Client-visible (public) URLs should be set to real public endpoints (load balancer / domain).
+      # Leave NEXT_PUBLIC_* empty so the client uses relative requests to the Next server (recommended),
+      # and configure internal service addresses below for server-side rewrites.
+      NEXT_PUBLIC_FEEDSERVICE_BASE: ""
+      NEXT_PUBLIC_API_BASE_URL: ""
+      NEXT_PUBLIC_TAMAGOSERVICE_BASE: ""
+      # Internal service addresses used by the Next server at runtime/build (NOT exposed to browser)
+      INTERNAL_FEEDSERVICE_BASE: "${INTERNAL_FEEDSERVICE_BASE:-http://feedservice:8080}"
+      INTERNAL_TAMAGOSERVICE_BASE: "${INTERNAL_TAMAGOSERVICE_BASE:-http://tamagoservice:8080}"
     depends_on:
       - tamagoservice
       - feedservice
